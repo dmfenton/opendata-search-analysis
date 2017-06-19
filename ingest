@@ -1,0 +1,5 @@
+#!/bin/bash
+while read f1
+do
+  curl -XPOST 'http://elastic.koopernetes.com/searches/search' -H "Content-Type: application/json" -d "{ \"search\": \"$f1\" }"
+done < output.csv
