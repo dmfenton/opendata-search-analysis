@@ -2,7 +2,7 @@ const client = require('./client');
 
 client.indices.putMapping(
   {
-    index: 'searches',
+    index: 'searches2',
     type: 'search',
     body: {
       properties: {

@@ -20,7 +20,7 @@ const columns = [
 ];
 const operation = {
   index: {
-    _index: 'searches',
+    _index: 'searches2',
     _type: 'search'
   }
 };
@@ -29,20 +29,29 @@ const parseOpts = {
   columns
 };
 
+let i = 0;
+let total = 0;
 _(fs.createReadStream('./searches.csv'))
   .split(/\n/)
   .map(row => {
-    const parsed = parse(row, parseOpts)[0];
-    Object.keys(parsed).forEach(key => {
-      if (key !== 'query') {
-        parsed[key] = parseFloat(parsed[key]);
-      }
-    });
-    return parsed;
+    let parsed;
+    try {
+      parsed = parse(row, parseOpts)[0];
+      Object.keys(parsed).forEach(key => {
+        if (key !== 'query') {
+          parsed[key] = parseFloat(parsed[key]);
+        }
+      });
+      return parsed;
+    } catch (e) {
+      console.log(row, e);
+      return;
+    }
   })
+  .compact()
   .intersperse(operation)
-  .batch(5000)
-  .ratelimit(10, 1000)
+  .batch(10000)
+  .ratelimit(5, 1000)
   .map(b => {
     const body = [operation, ...b].slice(0, -1);
     return _(client.bulk({ body }));
@@ -55,6 +64,11 @@ _(fs.createReadStream('./searches.csv'))
     if (p.errors) {
       console.log(JSON.stringify(p));
       throw new Error();
+    } else {
+      i++;
+      const indexed = p.items.length;
+      total += indexed;
+      console.log(`i=${i} indexed_count=${indexed} total_count=${total}`);
     }
   })
   .stopOnError(e => {
